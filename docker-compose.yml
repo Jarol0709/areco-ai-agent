@@ -1,0 +1,33 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-areco}
+      POSTGRES_USER: ${POSTGRES_USER:-areco}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no arquivo .env}
+    volumes:
+      - ./db/init/00_extensoes.sql:/docker-entrypoint-initdb.d/00_extensoes.sql:ro
+      - ./data/sql/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/init/02_rag_e_logs.sql:/docker-entrypoint-initdb.d/02_rag_e_logs.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-areco}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-areco}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:

@@ -1,0 +1,7 @@
+anthropic==2.9.0
+google-genai==2.33.0
+fastapi==0.162.5
+uvicorn[standard]==0.54.0
+pydantic==2.14.3
+psycopg[binary]==3.3.9
+fastembed==0.9.1
