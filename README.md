@@ -21,6 +21,7 @@ POST /perguntas ─► Orquestrador ─┬─ regra: protocolo OUV-NNNN ──�
 | Componente | Escolha |
 |---|---|
 | API | FastAPI (`app/main.py`) |
+| Frontend | HTML/CSS/JS sem frameworks (`app/static/`), servido pela API em `/` |
 | Banco | PostgreSQL 16 + pgvector (imagem `pgvector/pgvector:pg16`): dados tabulares e vetores no mesmo banco |
 | Provedor de LLM | `LLM_PROVIDER`: `gemini` (padrão) ou `anthropic` |
 | LLM dos agentes (`LLM_MODEL`) | Gemini: `gemini-3.8-flash` · Anthropic: `claude-sonnet-5-5` |
@@ -122,11 +123,28 @@ mostra o motivo. Depois de trocar, reinicie com `docker compose up -d api`. Os e
    ```
    Na inicialização, o contêiner `api` carrega os CSV (com validação), indexa os documentos no
    pgvector e sobe a API em `http://localhost:8000` (documentação em `/docs`).
-3. Pergunte:
+3. Abra o chat no navegador: **<http://localhost:8000/>** (ver [Frontend](#frontend)), ou pergunte
+   direto à API:
    ```bash
    curl -X POST http://localhost:8000/perguntas -H "Content-Type: application/json" \
         -d '{"pergunta": "Quanto foi gasto em despesas pagas de janeiro a março de 2025?"}'
    ```
+
+### Frontend
+Chat simples em HTML, CSS e JavaScript puro (sem frameworks), em `app/static/`, servido pela própria
+API — sem contêiner extra e sem CORS, porque página e API estão na mesma origem:
+
+| Endereço | Conteúdo |
+|---|---|
+| <http://localhost:8000/> | página do chat |
+| `http://localhost:8000/static/*` | `app.js` e `styles.css` |
+| <http://localhost:8000/docs> | documentação interativa da API |
+
+A página envia a pergunta para `POST /perguntas` e mostra, para cada resposta, o texto, o
+**domínio classificado**, a confiança, o status, o agente, a latência e a lista de **fontes**
+(arquivo, seção e IDs). O conteúdo da API é inserido só com `textContent`, nunca como HTML. Ao
+alterar os arquivos de `app/static/`, rode `docker compose up -d --build api`, porque eles fazem
+parte da imagem.
 
 ### Tamanho da imagem Docker
 Medido em 2026-11-17 (Docker Desktop 27.2, Windows):
@@ -154,7 +172,7 @@ Os scripts e testes locais leem o `.env` automaticamente (sem sobrescrever vari�
 
 | Tipo | Precisa de chave? | Precisa de banco? | O que cobre |
 |---|---|---|---|
-| Unitários | **Não** (as chaves são removidas do ambiente durante esses testes) | Não | carga e validação dos CSV, chunking, schemas das ferramentas, adaptadores Gemini/Anthropic com clientes falsos, regras e roteamento do orquestrador, mascaramento de logs |
+| Unitários | **Não** (as chaves são removidas do ambiente durante esses testes) | Não | frontend servido em `/`, carga e validação dos CSV, chunking, schemas das ferramentas, adaptadores Gemini/Anthropic com clientes falsos, regras e roteamento do orquestrador, mascaramento de logs |
 | Integração SQL (`test_integracao_sql.py`) | Não | Sim | funções SQL com valores esperados calculados de forma independente a partir dos CSV (T004–T007, T009, T011) |
 | Integração LLM (`test_integracao_llm.py`) | Sim | Não | classificação e escolha de função com o provedor real |
 | Avaliação (`tests/avaliar.py`) | Sim | Sim | os 12 casos: acerto de domínio, fonte e palavras-chave dos critérios |
@@ -171,6 +189,7 @@ Nenhuma chave nem header é registrado. O arquivo pode ser versionado.
 
 ```
 app/            API, orquestrador, cliente LLM, logs e agentes
+app/static/     frontend do chat (HTML/CSS/JS sem frameworks)
 scripts/        carregar_dados.py (CSV → PostgreSQL) e indexar_documentos.py (→ pgvector)
 db/init/        extensão pgvector e tabelas de RAG e logs (o data/sql/schema.sql original é reutilizado)
 tests/          pytest e script de avaliação

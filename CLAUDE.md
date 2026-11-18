@@ -20,7 +20,8 @@ LLM configurável por `LLM_PROVIDER` (`gemini`, padrão, ou `anthropic`); embedd
 **Status atual:** implementado e validado com Gemini (entrada #06): Docker no ar, 52 testes unitários e
 13 de integração passando, avaliação 12/12 em `resultados/avaliacao_gemini.md`. O provedor Anthropic
 está implementado e coberto por testes unitários, mas **fora do escopo da avaliação** por limitação da
-chave de API (entrada #07).
+chave de API (entrada #07). Frontend do chat servido pela API em `http://localhost:8000/` (entrada #09;
+56 testes unitários).
 
 ---
 
@@ -295,3 +296,41 @@ Desktop; `docker compose up --build`; medir as imagens; rodar `pytest -m integra
 - Nenhum teste novo. Os testes de integração com LLM rodam contra o provedor configurado e são
   pulados se não houver chave, então a ausência da chave da Anthropic não quebra a suíte.
 **Pendências:** commit.
+
+### [2026-11-17] #08 — Commit do projeto
+**Prompt:** "O commit de tudo já foi executado"
+**Decisões técnicas:**
+- Commit feito pelo usuário na `main` (`37b80cd`, "Agente multiagente"), sobre `ff7928a`.
+**Testes:**
+- Verificado: árvore de trabalho limpa após o commit; 61 arquivos versionados; `.env`, `.venv` e
+  `__pycache__` não estão no repositório.
+**Pendências:** nenhuma pendência técnica aberta. Esta entrada fica para o próximo commit.
+
+### [2026-11-17] #09 — Frontend do chat (HTML/CSS/JS sem frameworks)
+**Prompt:** criar um frontend simples com HTML, CSS e JavaScript, sem frameworks, com caixa de chat que
+envie a pergunta ao endpoint da API e mostre a resposta, o domínio classificado e as fontes; servi-lo
+pela própria aplicação ou por um contêiner; documentar o endereço no README; registrar no CLAUDE.md.
+**Decisões técnicas:**
+- Servido pela própria API (`StaticFiles` em `/static` + `GET /` com `index.html`, `app/main.py`) —
+  mesma origem dispensa CORS e não exige um terceiro contêiner; o `Dockerfile` já copia `app/`.
+  Mudança aditiva, pedida explicitamente pelo usuário, sem alterar orquestrador nem agentes.
+- `GET /` fora do schema OpenAPI (`include_in_schema=False`); `/docs` continua disponível.
+- Cada resposta mostra texto, domínio, confiança, status (cor por tipo), agente, latência e fontes
+  (arquivo, seção, IDs), lidos do `RespostaOrquestrador`.
+- Conteúdo da API inserido apenas com `textContent` (sem `innerHTML`) — evita injeção de HTML a partir
+  de textos dos dados ou do LLM.
+- Tema claro/escuro por `prefers-color-scheme`; botões com perguntas de exemplo; Enter envia.
+**Problemas e soluções:**
+- Problema: Docker não estava em execução nesta sessão → Solução: validação com `uvicorn` local
+  (porta 8011) sem banco, usando o caminho de recusa por regra (não depende de banco nem de LLM).
+**Código:**
+- ✅ Aceito: `app/static/index.html`, `app/static/styles.css`, `app/static/app.js`, rotas em
+  `app/main.py`, `tests/test_frontend.py`, seção "Frontend" no `README.md`.
+- ❌ Descartado: contêiner separado (nginx) para o frontend — mais um serviço e configuração de proxy
+  ou CORS sem ganho para uma página estática.
+**Testes:**
+- `python -m pytest -m "not integracao"` → 56 passed (4 novos em `tests/test_frontend.py`).
+- `uvicorn` local: `GET /` → 200 `text/html`; `GET /static/app.js` → 200; `POST /perguntas` com pedido
+  de senha de terceiros → `status=recusado`, fontes 04 e 09.
+- Não testado no navegador nem no contêiner: requer `docker compose up -d --build api`.
+**Pendências:** reconstruir a imagem da API e abrir <http://localhost:8000/>; commit.

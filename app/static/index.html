@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assistente Aurora</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topo">
+    <h1>Assistente Aurora</h1>
+    <p>Financeiro · Informações internas · Ouvidoria — dados sintéticos</p>
+  </header>
+
+  <main class="chat">
+    <section id="mensagens" class="mensagens" aria-live="polite">
+      <div class="boas-vindas">
+        <p>Faça uma pergunta. Exemplos:</p>
+        <div class="exemplos">
+          <button type="button" class="exemplo">Qual o status do protocolo OUV-0002?</button>
+          <button type="button" class="exemplo">Quanto foi gasto em despesas pagas de janeiro a março de 2025?</button>
+          <button type="button" class="exemplo">Qual é a política de trabalho remoto?</button>
+        </div>
+      </div>
+    </section>
+
+    <form id="formulario" class="formulario">
+      <textarea id="pergunta" rows="2" minlength="3" maxlength="1000" required
+                placeholder="Digite sua pergunta (Enter envia, Shift+Enter quebra linha)"></textarea>
+      <button id="enviar" type="submit">Enviar</button>
+    </form>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
